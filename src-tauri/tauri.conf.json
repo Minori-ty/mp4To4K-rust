@@ -1,0 +1,96 @@
+{
+    "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+    "build": {
+        "beforeBuildCommand": "yarn build",
+        "beforeDevCommand": "yarn dev",
+        "devPath": "http://localhost:5173",
+        "distDir": "../dist"
+    },
+    "package": {
+        "productName": "tauri-app",
+        "version": "0.1.0"
+    },
+    "tauri": {
+        "allowlist": {
+            "all": true,
+            "shell": {
+                "all": true,
+                "execute": true,
+                "sidecar": true,
+                "open": true,
+                "scope": [
+                    {
+                        "name": "ffmpeg",
+                        "cmd": "cmd",
+                        "args": ["/C", { "validator": "\\S+" }]
+                    }
+                ]
+            },
+            "fs": {
+                "all": true,
+                "readFile": true,
+                "writeFile": true,
+                "readDir": true,
+                "copyFile": true,
+                "createDir": true,
+                "removeDir": true,
+                "removeFile": true,
+                "renameFile": true,
+                "scope": ["D:\\program\\rust\\tauri-app\\*"]
+            }
+        },
+        "bundle": {
+            "active": true,
+            "category": "DeveloperTool",
+            "copyright": "",
+            "deb": {
+                "depends": []
+            },
+            "externalBin": [],
+            "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
+                "icons/icon.icns",
+                "icons/icon.ico"
+            ],
+            "identifier": "com.lk.lk",
+            "longDescription": "",
+            "macOS": {
+                "entitlements": null,
+                "exceptionDomain": "",
+                "frameworks": [],
+                "providerShortName": null,
+                "signingIdentity": null
+            },
+            "resources": [],
+            "shortDescription": "",
+            "targets": "all",
+            "windows": {
+                "certificateThumbprint": null,
+                "digestAlgorithm": "sha256",
+                "timestampUrl": ""
+            }
+        },
+        "security": {
+            "csp": null
+        },
+        "updater": {
+            "active": false
+        },
+        "windows": [
+            {
+                "fullscreen": false,
+                "height": 700,
+                "resizable": true,
+                "title": "Tauri App",
+                "width": 900,
+                "decorations": false,
+                "minWidth": 900,
+                "minHeight": 700,
+                "center": true,
+                "transparent": true
+            }
+        ]
+    }
+}

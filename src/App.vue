@@ -7,7 +7,7 @@
                     <img src="./assets/最小化.svg" alt="minimize" />
                 </div>
                 <div class="titlebar-button" id="titlebar-maximize">
-                    <img src="./assets/最大化.svg" alt="maximize" />
+                    <img :src="isMax ? remin : max" alt="maximize" />
                 </div>
                 <div class="titlebar-button" id="titlebar-close">
                     <img src="./assets/关闭.svg" alt="close" />
@@ -40,7 +40,10 @@ import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir } from '@tauri-apps/api/path'
 import { Command } from '@tauri-apps/api/shell'
 import { createDir, BaseDirectory } from '@tauri-apps/api/fs'
+import max from './assets/最大化.svg'
+import remin from './assets/还原.svg'
 
+const isMax = ref(false)
 const path = ref('')
 async function select() {
     const selected = await open({
@@ -85,7 +88,10 @@ async function init() {
 init()
 onMounted(() => {
     document.getElementById('titlebar-minimize')!.addEventListener('click', () => appWindow.minimize())
-    document.getElementById('titlebar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize())
+    document.getElementById('titlebar-maximize')!.addEventListener('click', () => {
+        appWindow.toggleMaximize()
+        isMax.value = !isMax.value
+    })
     document.getElementById('titlebar-close')!.addEventListener('click', async () => {
         close()
     })

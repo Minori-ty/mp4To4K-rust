@@ -36,7 +36,7 @@
                 "removeDir": true,
                 "removeFile": true,
                 "renameFile": true,
-                "scope": ["D:\\program\\rust\\tauri-app\\*"]
+                "scope": ["$HOME"]
             }
         },
         "bundle": {

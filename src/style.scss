@@ -15,6 +15,7 @@ $title-aside: 220px;
     overflow: hidden;
     // opacity: 0;
 }
+
 .titlebar {
     height: 50px;
     background: #111;
@@ -27,11 +28,12 @@ $title-aside: 220px;
     left: 0;
     right: 0;
     z-index: 2;
-    border-top-left-radius: $border-radius;
-    border-top-right-radius: $border-radius;
+    // border-top-left-radius: $border-radius;
+    // border-top-right-radius: $border-radius;
     padding: 0 20px 0 0;
     overflow: hidden;
 }
+
 .titlebar-button {
     display: inline-flex;
     justify-content: center;
@@ -47,8 +49,14 @@ $title-aside: 220px;
     width: 18px;
     height: 18px;
     opacity: 0.5;
-    &:hover {
+}
+
+.titlebar-button{
+    &:hover img{
         opacity: 1;
+    }
+    &:hover{
+        background-color: #333;
     }
 }
 

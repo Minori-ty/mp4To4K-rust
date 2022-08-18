@@ -1,15 +1,15 @@
 <template>
     <div class="clearfix">
         <div data-tauri-drag-region class="titlebar">
-            <div class="title-aside"></div>
+            <div data-tauri-drag-region class="title-aside"></div>
             <div>
-                <div class="titlebar-button" id="titlebar-minimize">
+                <div class="titlebar-button" id="titlebar-minimize" @click="minimize">
                     <img src="./assets/最小化.svg" alt="minimize" />
                 </div>
-                <div class="titlebar-button" id="titlebar-maximize">
+                <div class="titlebar-button" id="titlebar-maximize" @click="toggleMaximize">
                     <img :src="isMax ? remin : max" alt="maximize" />
                 </div>
-                <div class="titlebar-button" id="titlebar-close">
+                <div class="titlebar-button" id="titlebar-close" @click="closeApp">
                     <img src="./assets/关闭.svg" alt="close" />
                 </div>
             </div>
@@ -39,7 +39,7 @@ import { appWindow } from '@tauri-apps/api/window'
 import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir } from '@tauri-apps/api/path'
 import { Command } from '@tauri-apps/api/shell'
-import { createDir, BaseDirectory } from '@tauri-apps/api/fs'
+import { createDir, BaseDirectory, readDir } from '@tauri-apps/api/fs'
 import max from './assets/最大化.svg'
 import remin from './assets/还原.svg'
 
@@ -62,21 +62,32 @@ const input = 'D:\\program\\electron-vite-vue\\1.mp4'
 const img = 'D:\\program\\electron-vite-vue\\output/frame%08d.png'
 
 async function ffmpeg() {
-    if (!path.value)
-        return ElMessageBox.alert('请选择文件目录', 'Title', {
-            confirmButtonText: 'OK',
-        })
-    const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
+    // if (!path.value)
+    //     return ElMessageBox.alert('请选择文件目录', 'Title', {
+    //         confirmButtonText: 'OK',
+    //     })
+    // const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
 
-    command.on('close', (data) => {
-        console.log(`command finished with code ${data.code} and signal ${data.signal}`)
-    })
-    command.on('error', (error) => console.error(`command error: "${error}"`))
-    command.stdout.on('data', (line) => console.log(`command stdout: "${line}"`))
-    command.stderr.on('data', (line) => console.log(`command stderr: "${line}"`))
-    const child = await command.spawn()
-    console.log('pid:', child)
-    await createDir('D:\\program\\rust\\tauri-app\\ffmpeg', { dir: BaseDirectory.App, recursive: true })
+    // command.on('close', (data) => {
+    //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
+    // })
+    // command.on('error', (error) => console.error(`command error: "${error}"`))
+    // command.stdout.on('data', (line) => console.log(`command stdout: "${line}"`))
+    // command.stderr.on('data', (line) => console.log(`command stderr: "${line}"`))
+    // const child = await command.spawn()
+    // console.log('pid:', child)
+    // await createDir('D:\\program\\rust\\tauri-app\\ffmpeg', { dir: BaseDirectory.App, recursive: true })
+
+    const entries = await readDir('users', { dir: BaseDirectory.Data, recursive: true })
+    function processEntries(entries: any) {
+        for (const entry of entries) {
+            console.log(`Entry: ${entry.path}`)
+            if (entry.children) {
+                processEntries(entry.children)
+            }
+        }
+    }
+    processEntries(entries)
 }
 
 async function init() {
@@ -86,16 +97,20 @@ async function init() {
     // })
 }
 init()
-onMounted(() => {
-    document.getElementById('titlebar-minimize')!.addEventListener('click', () => appWindow.minimize())
-    document.getElementById('titlebar-maximize')!.addEventListener('click', () => {
-        appWindow.toggleMaximize()
-        isMax.value = !isMax.value
-    })
-    document.getElementById('titlebar-close')!.addEventListener('click', async () => {
-        close()
-    })
-})
+
+function minimize() {
+    appWindow.minimize()
+}
+
+function toggleMaximize() {
+    appWindow.toggleMaximize()
+    isMax.value = !isMax.value
+}
+
+function closeApp() {
+    close()
+}
+
 const precent = ref(0)
 
 const start = () => {
@@ -125,11 +140,11 @@ document.oncontextmenu = function () {
 const arr = [755, 155]
 
 async function close() {
-    await Promise.all(
-        arr.map(async (pid) => {
-            await createDir(`D:\\program\\rust\\tauri-app\\${pid}`, { dir: BaseDirectory.App, recursive: true })
-        })
-    )
+    // await Promise.all(
+    //     arr.map(async (pid) => {
+    //         await createDir(`D:\\program\\rust\\tauri-app\\${pid}`, { dir: BaseDirectory.App, recursive: true })
+    //     })
+    // )
     appWindow.close()
 }
 </script>

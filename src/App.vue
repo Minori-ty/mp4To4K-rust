@@ -24,9 +24,10 @@
         <el-main>
             <div class="box select-box">
                 <div class="box select-button" @click="select">+ 选择路径</div>
+                <div class="box" :class="[path ? 'start-button' : 'default-button']" @click="start">开始转码</div>
             </div>
             <div class="box terminal"></div>
-            <el-button @click="ffmpeg" type="primary">开始</el-button>
+            <!-- <el-button @click="ffmpeg" type="primary">开始</el-button> -->
         </el-main>
     </el-container>
 </template>
@@ -34,7 +35,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { HomeFilled } from '@element-plus/icons-vue'
-import { ElContainer, ElAside, ElIcon, ElMain, ElMessage, ElMessageBox, ElButton, type Action } from 'element-plus'
 import { appWindow } from '@tauri-apps/api/window'
 import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir } from '@tauri-apps/api/path'
@@ -42,9 +42,15 @@ import { Command } from '@tauri-apps/api/shell'
 import { createDir, BaseDirectory, readDir } from '@tauri-apps/api/fs'
 import max from './assets/最大化.svg'
 import remin from './assets/还原.svg'
+import { ElMessageBox } from 'element-plus'
+import { invoke } from '@tauri-apps/api/tauri'
 
+/** 当前软件是否最大化 */
 const isMax = ref(false)
+
+/** 选择的目录路径 */
 const path = ref('')
+
 async function select() {
     const selected = await open({
         directory: true,
@@ -61,13 +67,20 @@ async function select() {
 const input = 'D:\\program\\electron-vite-vue\\1.mp4'
 const img = 'D:\\program\\electron-vite-vue\\output/frame%08d.png'
 
-async function ffmpeg() {
-    // if (!path.value)
-    //     return ElMessageBox.alert('请选择文件目录', 'Title', {
-    //         confirmButtonText: 'OK',
-    //     })
-    // const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
+async function start() {
+    const arr = path.value.split('\\')
+    // 如果没有选择，则退出报错
+    if (!path.value) return
 
+    // 如果选择的不是input目录，则退出报错
+    if (arr[arr.length - 1] !== 'input')
+        return ElMessageBox.alert('请选择input目录', 'Title', {
+            confirmButtonText: 'OK',
+        })
+    const data = await invoke('read_dir_file', { path: path.value })
+    console.log(data)
+
+    // const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
     // command.on('close', (data) => {
     //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
     // })
@@ -77,17 +90,16 @@ async function ffmpeg() {
     // const child = await command.spawn()
     // console.log('pid:', child)
     // await createDir('D:\\program\\rust\\tauri-app\\ffmpeg', { dir: BaseDirectory.App, recursive: true })
-
-    const entries = await readDir('users', { dir: BaseDirectory.Data, recursive: true })
-    function processEntries(entries: any) {
-        for (const entry of entries) {
-            console.log(`Entry: ${entry.path}`)
-            if (entry.children) {
-                processEntries(entry.children)
-            }
-        }
-    }
-    processEntries(entries)
+    // const entries = await readDir('users', { dir: BaseDirectory.Data, recursive: true })
+    // function processEntries(entries: any) {
+    //     for (const entry of entries) {
+    //         console.log(`Entry: ${entry.path}`)
+    //         if (entry.children) {
+    //             processEntries(entry.children)
+    //         }
+    //     }
+    // }
+    // processEntries(entries)
 }
 
 async function init() {
@@ -113,25 +125,25 @@ function closeApp() {
 
 const precent = ref(0)
 
-const start = () => {
-    ElMessage({
-        message: '开始下载',
-        type: 'success',
-    })
-    const timer = setInterval(() => {
-        if (precent.value >= 100) {
-            ElMessage({
-                message: '下载完成！',
-                type: 'success',
-            })
-            return clearInterval(timer)
-        }
-        precent.value += 10
-        console.log(precent.value)
-    }, 200)
-}
+// const start = () => {
+//     ElMessage({
+//         message: '开始下载',
+//         type: 'success',
+//     })
+//     const timer = setInterval(() => {
+//         if (precent.value >= 100) {
+//             ElMessage({
+//                 message: '下载完成！',
+//                 type: 'success',
+//             })
+//             return clearInterval(timer)
+//         }
+//         precent.value += 10
+//         console.log(precent.value)
+//     }, 200)
+// }
 
-/** 禁止右键 */
+// 禁止右键
 document.oncontextmenu = function () {
     // return false
     return true
@@ -180,18 +192,35 @@ async function close() {
     display: flex;
     align-items: center;
 }
-.select-button {
+
+%btn {
     width: 150px;
     height: 50px;
-    background-color: #01c2ce;
     text-align: center;
     line-height: 50px;
     cursor: pointer;
+}
+.select-button {
+    background-color: #01c2ce;
+    @extend %btn;
     &:hover {
         box-shadow: 0px 0px 5px #01c2ce;
     }
 }
-
+.default-button {
+    background-color: #555;
+    @extend %btn;
+    &:hover {
+        box-shadow: 0px 0px 5px #444;
+    }
+}
+.start-button {
+    background-color: #409eff;
+    @extend %btn;
+    &:hover {
+        box-shadow: 0px 0px 5px #409eff;
+    }
+}
 .terminal {
     margin-top: 40px;
     height: 80px;

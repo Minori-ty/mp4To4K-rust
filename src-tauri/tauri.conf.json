@@ -14,10 +14,6 @@
         "allowlist": {
             "all": true,
             "shell": {
-                "all": true,
-                "execute": true,
-                "sidecar": true,
-                "open": true,
                 "scope": [
                     {
                         "name": "ffmpeg",
@@ -27,16 +23,7 @@
                 ]
             },
             "fs": {
-                "all": true,
-                "readFile": true,
-                "writeFile": true,
-                "readDir": true,
-                "copyFile": true,
-                "createDir": true,
-                "removeDir": true,
-                "removeFile": true,
-                "renameFile": true,
-                "scope": ["$HOME"]
+                "scope": ["F:/program/node/video"]
             }
         },
         "bundle": {
@@ -63,13 +50,16 @@
                 "providerShortName": null,
                 "signingIdentity": null
             },
-            "resources": [],
+            "resources": ["../ffmpeg/**/*", "../realesrgan/**/*"],
             "shortDescription": "",
             "targets": "all",
             "windows": {
                 "certificateThumbprint": null,
                 "digestAlgorithm": "sha256",
-                "timestampUrl": ""
+                "timestampUrl": "",
+                "wix": {
+                    "language": ["zh-CN"]
+                }
             }
         },
         "security": {

@@ -5,7 +5,7 @@ $title-aside: 220px;
     margin: 0;
     padding: 0;
     color: #fff;
-    user-select: none;
+    // user-select: none;
     box-sizing: border-box;
 }
 #app {
@@ -51,11 +51,11 @@ $title-aside: 220px;
     opacity: 0.5;
 }
 
-.titlebar-button{
-    &:hover img{
+.titlebar-button {
+    &:hover img {
         opacity: 1;
     }
-    &:hover{
+    &:hover {
         background-color: #333;
     }
 }

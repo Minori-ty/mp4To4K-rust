@@ -26,7 +26,8 @@
                 <div class="box select-button" @click="select">+ 选择路径</div>
                 <div class="box" :class="[path ? 'start-button' : 'default-button']" @click="start">开始转码</div>
             </div>
-            <div class="box terminal"></div>
+
+            <div class="box terminal">{{ terminal }}</div>
             <!-- <el-button @click="ffmpeg" type="primary">开始</el-button> -->
         </el-main>
     </el-container>
@@ -35,15 +36,55 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { HomeFilled } from '@element-plus/icons-vue'
-import { appWindow } from '@tauri-apps/api/window'
+import { minimize, closeApp } from './system'
 import { open, confirm } from '@tauri-apps/api/dialog'
-import { appDir } from '@tauri-apps/api/path'
+import { appDir, resourceDir, join } from '@tauri-apps/api/path'
 import { Command } from '@tauri-apps/api/shell'
 import { createDir, BaseDirectory, readDir } from '@tauri-apps/api/fs'
 import max from './assets/最大化.svg'
 import remin from './assets/还原.svg'
 import { ElMessageBox } from 'element-plus'
 import { invoke } from '@tauri-apps/api/tauri'
+import { appWindow } from '@tauri-apps/api/window'
+
+/** ffmpeg的路径 */
+const ffmpegPath = ref('')
+const terminal = ref('')
+
+/**
+ * @description  获取ffmpeg的路径
+ */
+async function getffmpeg() {
+    const path = await resourceDir()
+    const res = await join(path, '_up_', 'ffmpeg', 'bin', 'ffmpeg.exe')
+    ffmpegPath.value = res.replaceAll('\\', '/').slice(4)
+}
+getffmpeg()
+
+async function fn() {
+    const command = new Command('ffmpeg', ['/C', `${ffmpegPath.value} -i D:/program/rust/mp4To4K-rust/test.mp4`])
+    // command.on('close', (data) => {
+    //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
+    // })
+    // command.on('error', (error) => console.error(`command error: "${error}"`))
+
+    // command.stdout.on('data', (line) => {
+    //     console.log(line)
+    // })
+
+    // command.stderr.on('data', (line) => {
+    //     terminal.value = line
+    //     console.log(line)
+    // })
+    const child = await command.spawn()
+    console.log('pid:', child.pid)
+}
+
+async function queue() {
+    await getffmpeg()
+    await fn()
+}
+queue()
 
 /** 当前软件是否最大化 */
 const isMax = ref(false)
@@ -51,6 +92,7 @@ const isMax = ref(false)
 /** 选择的目录路径 */
 const path = ref('')
 
+/** 选择目录 */
 async function select() {
     const selected = await open({
         directory: true,
@@ -58,6 +100,7 @@ async function select() {
         defaultPath: await appDir(),
     })
     if (selected) {
+        // 当选择时才修改path的值
         path.value = selected as string
         console.log(selected)
     } else {
@@ -110,19 +153,6 @@ async function init() {
 }
 init()
 
-function minimize() {
-    appWindow.minimize()
-}
-
-function toggleMaximize() {
-    appWindow.toggleMaximize()
-    isMax.value = !isMax.value
-}
-
-function closeApp() {
-    close()
-}
-
 const precent = ref(0)
 
 // const start = () => {
@@ -151,6 +181,10 @@ document.oncontextmenu = function () {
 
 const arr = [755, 155]
 
+function toggleMaximize() {
+    appWindow.toggleMaximize()
+    isMax.value = !isMax.value
+}
 async function close() {
     // await Promise.all(
     //     arr.map(async (pid) => {

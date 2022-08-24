@@ -15,11 +15,9 @@ fn main() {
 fn read_dir_file(path: String) -> Vec<String> {
     let mut arr: Vec<String> = vec![];
     for item in read_dir(path).unwrap() {
-        let res = item.unwrap();
-        if !res.path().is_dir() {
-            arr.push(res.file_name().into_string().unwrap());
+        if !item.as_ref().unwrap().path().is_dir() {
+            arr.push(item.unwrap().file_name().into_string().unwrap());
         }
     }
-    println!("{:?}", arr);
     return arr;
 }

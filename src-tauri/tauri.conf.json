@@ -23,7 +23,7 @@
                 ]
             },
             "fs": {
-                "scope": ["F:/program/node/video"]
+                "scope": ["C:/**/*", "D:/**/*", "E:/**/*", "F:/**/*"]
             }
         },
         "bundle": {

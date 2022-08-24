@@ -6,6 +6,7 @@ import { resourceDir, join } from '@tauri-apps/api/path'
  */
 export async function getffmpeg() {
     const resourcePath = await resourceDir()
-    const res = await join(resourcePath, '_up_', 'ffmpeg', 'bin', 'ffmpeg.exe')
-    return res.replaceAll('\\', '/').slice(4)
+    const ffmpeg = await join(resourcePath, '_up_', 'ffmpeg', 'bin', 'ffmpeg.exe')
+    const realesrgan = await join(resourcePath, '_up_', 'realesrgan', 'realesrgan-ncnn-vulkan.exe')
+    return [ffmpeg.replaceAll('\\', '/').slice(4), realesrgan.replaceAll('\\', '/').slice(4)]
 }

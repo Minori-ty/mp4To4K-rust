@@ -40,42 +40,28 @@ import { minimize, closeApp } from './system'
 import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir, resourceDir, join } from '@tauri-apps/api/path'
 import { Command } from '@tauri-apps/api/shell'
-import { createDir, BaseDirectory, readDir } from '@tauri-apps/api/fs'
+import { createDir, readDir } from '@tauri-apps/api/fs'
 import max from './assets/最大化.svg'
 import remin from './assets/还原.svg'
 import { ElMessageBox } from 'element-plus'
 import { invoke } from '@tauri-apps/api/tauri'
 import { appWindow } from '@tauri-apps/api/window'
 import { getffmpeg } from './script/getffmpeg'
+import { pids } from './store'
 
 /** ffmpeg的路径 */
 const ffmpegPath = ref('')
+/** realesrgan的路径 */
+const realesrgan = ref('')
 const terminal = ref('')
 
 async function init() {
     // 获取ffmpeg路径
-    ffmpegPath.value = await getffmpeg()
+    ;[ffmpegPath.value, realesrgan.value] = await getffmpeg()
+    // const data = await invoke<number>('read_dir_file_count', { path: 'D:\\program\\rust\\img_temp\\test' })
+    // console.log(data)
 }
 init()
-
-async function fn() {
-    const command = new Command('ffmpeg', ['/C', `${ffmpegPath.value} -i D:/program/rust/mp4To4K-rust/test.mp4`])
-    command.on('close', (data) => {
-        console.log(`command finished with code ${data.code} and signal ${data.signal}`)
-    })
-    command.on('error', (error) => console.error(`command error: "${error}"`))
-
-    command.stdout.on('data', (line) => {
-        console.log(line)
-    })
-
-    command.stderr.on('data', (line) => {
-        terminal.value = line
-        console.log(line)
-    })
-    const child = await command.spawn()
-    console.log('pid:', child.pid)
-}
 
 /** 当前软件是否最大化 */
 const isMax = ref(false)
@@ -114,78 +100,57 @@ async function start() {
     const data = await invoke<string[]>('read_dir_file', { path: path.value })
     console.log(data)
     if (data.length === 0) return
-    const basePath = path.value.replace('input', 'img_temp').replaceAll('\\', '/')
-    await readDir(basePath).catch(() => {
-        createDir(basePath)
+
+    /** input的上级路径 */
+    const basePath = path.value.replace('input', '').replaceAll('\\', '/')
+    await readDir(`${basePath}/img_temp`).catch(() => {
+        createDir(`${basePath}/img_temp`)
     })
-    ;[1].forEach(async (item) => {
-        await readDir(`${basePath}/test`).catch(() => {
-            createDir(`${basePath}/test`)
+
+    data.forEach(async (file) => {
+        const fileName = file.replace('.mp4', '')
+        await readDir(`${basePath}/img_temp/${fileName}`).catch(() => {
+            createDir(`${basePath}/img_temp/${fileName}`)
         })
-        const cmd = `${ffmpegPath.value} -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}/test/frame%08d.png`
+        const cmd = `${ffmpegPath.value} -i ${basePath}/input/${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}img_temp/${fileName}/frame%08d.png`
         const command = new Command('ffmpeg', ['/C', cmd])
-        console.log(cmd)
-        command.on('close', (data) => {
-            console.log(`command finished with code ${data.code} and signal ${data.signal}`)
-        })
-        command.on('error', (error) => console.error(`command error: "${error}"`))
+        // console.log(cmd)
+        // command.on('close', () => {
+        //     console.log('任务完成')
+        // })
 
-        command.stdout.on('data', (line) => {
-            console.log(line)
+        // command.stderr.on('data', (line) => {
+        //     terminal.value = line
+        //     console.log(line)
+        // })
+        const { pid } = await command.spawn()
+        pids.push(pid)
+        await readDir(`${basePath}/img_out`).catch(() => {
+            createDir(`${basePath}/img_out`)
+        })
+        await readDir(`${basePath}/img_out/${fileName}`).catch(() => {
+            createDir(`${basePath}/img_out/${fileName}`)
+        })
+        const cmd2 = `${realesrgan.value} -i ${basePath}img_temp/${fileName} -o ${basePath}img_out/${fileName} -n realesr-animevideov3 -s 2 -f jpg`
+        const command2 = new Command('ffmpeg', ['/C', cmd2])
+        console.log(cmd2)
+        command2.on('close', () => {
+            console.log('任务完成')
         })
 
-        command.stderr.on('data', (line) => {
+        command2.stderr.on('data', (line) => {
             terminal.value = line
             console.log(line)
         })
-        const child = await command.spawn()
-
-        // console.log(child)
+        await command2.spawn()
     })
-    // const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
-    // command.on('close', (data) => {
-    //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
-    // })
-    // command.on('error', (error) => console.error(`command error: "${error}"`))
-    // command.stdout.on('data', (line) => console.log(`command stdout: "${line}"`))
-    // command.stderr.on('data', (line) => console.log(`command stderr: "${line}"`))
-    // const child = await command.spawn()
-    // console.log('pid:', child)
-    // await createDir('D:\\program\\rust\\tauri-app\\ffmpeg', { dir: BaseDirectory.App, recursive: true })
-    // const entries = await readDir('users', { dir: BaseDirectory.Data, recursive: true })
-    // function processEntries(entries: any) {
-    //     for (const entry of entries) {
-    //         console.log(`Entry: ${entry.path}`)
-    //         if (entry.children) {
-    //             processEntries(entry.children)
-    //         }
-    //     }
-    // }
-    // processEntries(entries)
 }
 
 const precent = ref(0)
 
-// const start = () => {
-//     ElMessage({
-//         message: '开始下载',
-//         type: 'success',
-//     })
-//     const timer = setInterval(() => {
-//         if (precent.value >= 100) {
-//             ElMessage({
-//                 message: '下载完成！',
-//                 type: 'success',
-//             })
-//             return clearInterval(timer)
-//         }
-//         precent.value += 10
-//         console.log(precent.value)
-//     }, 200)
-// }
-
 // 禁止右键
 document.oncontextmenu = function () {
+    // false为禁止
     // return false
     return true
 }
@@ -196,6 +161,8 @@ function toggleMaximize() {
     appWindow.toggleMaximize()
     isMax.value = !isMax.value
 }
+
+/** 关闭app */
 async function close() {
     // await Promise.all(
     //     arr.map(async (pid) => {

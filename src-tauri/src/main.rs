@@ -6,7 +6,7 @@
 use std::fs::read_dir;
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_dir_file])
+        .invoke_handler(tauri::generate_handler![read_dir_file, read_dir_file_count])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -20,4 +20,14 @@ fn read_dir_file(path: String) -> Vec<String> {
         }
     }
     return arr;
+}
+
+#[tauri::command]
+fn read_dir_file_count(path: String) -> i32 {
+    let dir = read_dir(path).unwrap();
+    let mut count: i32 = 0;
+    for _ in dir {
+        count += 1;
+    }
+    return count;
 }

@@ -80,6 +80,8 @@ async function select() {
         // 当选择时才修改path的值
         path.value = selected as string
         console.log(selected)
+        path.value = await invoke('trans_path', { path: selected })
+        console.log('fs', path.value)
     } else {
         path.value = ''
     }
@@ -88,7 +90,9 @@ const input = 'D:\\program\\electron-vite-vue\\1.mp4'
 const img = 'D:\\program\\electron-vite-vue\\output/frame%08d.png'
 
 async function start() {
-    const arr = path.value.split('\\')
+    const arr = path.value.split('/')
+    console.log(arr)
+
     // 如果没有选择，则退出报错
     if (!path.value) return
 
@@ -100,49 +104,60 @@ async function start() {
     const data = await invoke<string[]>('read_dir_file', { path: path.value })
     console.log(data)
     if (data.length === 0) return
+    console.log(path.value)
+    const ls = await join(path.value)
+    console.log(ls)
 
+    // const res = path.value.match(/.+(?=\/input)/g)
     /** input的上级路径 */
-    const basePath = path.value.replace('input', '').replaceAll('\\', '/')
+    const basePath = path.value.replace('/input', '')
     await readDir(`${basePath}/img_temp`).catch(() => {
         createDir(`${basePath}/img_temp`)
     })
+    console.log(basePath)
 
     data.forEach(async (file) => {
         const fileName = file.replace('.mp4', '')
         await readDir(`${basePath}/img_temp/${fileName}`).catch(() => {
             createDir(`${basePath}/img_temp/${fileName}`)
         })
-        const cmd = `${ffmpegPath.value} -i ${basePath}/input/${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}img_temp/${fileName}/frame%08d.png`
+        const cmd = `${ffmpegPath.value} -i ${basePath.replaceAll(
+            '/',
+            '\\'
+        )}\\input\\${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath.replaceAll(
+            '/',
+            '\\'
+        )}\\img_temp\\${fileName}\\frame%08d.png`
         const command = new Command('ffmpeg', ['/C', cmd])
-        // console.log(cmd)
-        // command.on('close', () => {
-        //     console.log('任务完成')
-        // })
+        console.log(cmd)
+        command.on('close', () => {
+            console.log('任务完成')
+        })
 
-        // command.stderr.on('data', (line) => {
-        //     terminal.value = line
-        //     console.log(line)
-        // })
+        command.stderr.on('data', (line) => {
+            terminal.value = line
+            console.log(line)
+        })
         const { pid } = await command.spawn()
         pids.push(pid)
-        await readDir(`${basePath}/img_out`).catch(() => {
-            createDir(`${basePath}/img_out`)
-        })
-        await readDir(`${basePath}/img_out/${fileName}`).catch(() => {
-            createDir(`${basePath}/img_out/${fileName}`)
-        })
-        const cmd2 = `${realesrgan.value} -i ${basePath}img_temp/${fileName} -o ${basePath}img_out/${fileName} -n realesr-animevideov3 -s 2 -f jpg`
+        // await readDir(`${basePath}/img_out`).catch(() => {
+        //     createDir(`${basePath}/img_out`)
+        // })
+        // await readDir(`${basePath}/img_out/${fileName}`).catch(() => {
+        //     createDir(`${basePath}/img_out/${fileName}`)
+        // })
+        const cmd2 = `${realesrgan.value} -i ${basePath}/img_temp/${fileName} -o '${basePath}/img_out/${fileName} -n realesr-animevideov3 -s 2 -f jpg'`
         const command2 = new Command('ffmpeg', ['/C', cmd2])
-        console.log(cmd2)
+        // console.log(cmd2)
         command2.on('close', () => {
             console.log('任务完成')
         })
 
         command2.stderr.on('data', (line) => {
             terminal.value = line
-            console.log(line)
+            // console.log(line)
         })
-        await command2.spawn()
+        // await command2.spawn()
     })
 }
 

@@ -6,7 +6,11 @@
 use std::fs::read_dir;
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_dir_file, read_dir_file_count])
+        .invoke_handler(tauri::generate_handler![
+            read_dir_file,
+            read_dir_file_count,
+            trans_path
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -30,4 +34,19 @@ fn read_dir_file_count(path: String) -> i32 {
         count += 1;
     }
     return count;
+}
+
+#[tauri::command]
+fn trans_path(path: String) -> String {
+    println!("{}", path);
+    let mut str = String::new();
+    for chart in path.chars() {
+        if chart.to_string() == "\\".to_string() {
+            str += "/"
+        } else {
+            str += chart.to_string().as_str();
+        }
+        // println!("{}", chart);
+    }
+    return str;
 }

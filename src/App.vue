@@ -46,45 +46,36 @@ import remin from './assets/还原.svg'
 import { ElMessageBox } from 'element-plus'
 import { invoke } from '@tauri-apps/api/tauri'
 import { appWindow } from '@tauri-apps/api/window'
+import { getffmpeg } from './script/getffmpeg'
 
 /** ffmpeg的路径 */
 const ffmpegPath = ref('')
 const terminal = ref('')
 
-/**
- * @description  获取ffmpeg的路径
- */
-async function getffmpeg() {
-    const path = await resourceDir()
-    const res = await join(path, '_up_', 'ffmpeg', 'bin', 'ffmpeg.exe')
-    ffmpegPath.value = res.replaceAll('\\', '/').slice(4)
+async function init() {
+    // 获取ffmpeg路径
+    ffmpegPath.value = await getffmpeg()
 }
-getffmpeg()
+init()
 
 async function fn() {
     const command = new Command('ffmpeg', ['/C', `${ffmpegPath.value} -i D:/program/rust/mp4To4K-rust/test.mp4`])
-    // command.on('close', (data) => {
-    //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
-    // })
-    // command.on('error', (error) => console.error(`command error: "${error}"`))
+    command.on('close', (data) => {
+        console.log(`command finished with code ${data.code} and signal ${data.signal}`)
+    })
+    command.on('error', (error) => console.error(`command error: "${error}"`))
 
-    // command.stdout.on('data', (line) => {
-    //     console.log(line)
-    // })
+    command.stdout.on('data', (line) => {
+        console.log(line)
+    })
 
-    // command.stderr.on('data', (line) => {
-    //     terminal.value = line
-    //     console.log(line)
-    // })
+    command.stderr.on('data', (line) => {
+        terminal.value = line
+        console.log(line)
+    })
     const child = await command.spawn()
     console.log('pid:', child.pid)
 }
-
-async function queue() {
-    await getffmpeg()
-    await fn()
-}
-queue()
 
 /** 当前软件是否最大化 */
 const isMax = ref(false)
@@ -120,9 +111,37 @@ async function start() {
         return ElMessageBox.alert('请选择input目录', 'Title', {
             confirmButtonText: 'OK',
         })
-    const data = await invoke('read_dir_file', { path: path.value })
+    const data = await invoke<string[]>('read_dir_file', { path: path.value })
     console.log(data)
+    if (data.length === 0) return
+    const basePath = path.value.replace('input', 'img_temp').replaceAll('\\', '/')
+    await readDir(basePath).catch(() => {
+        createDir(basePath)
+    })
+    ;[1].forEach(async (item) => {
+        await readDir(`${basePath}/test`).catch(() => {
+            createDir(`${basePath}/test`)
+        })
+        const cmd = `${ffmpegPath.value} -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}/test/frame%08d.png`
+        const command = new Command('ffmpeg', ['/C', cmd])
+        console.log(cmd)
+        command.on('close', (data) => {
+            console.log(`command finished with code ${data.code} and signal ${data.signal}`)
+        })
+        command.on('error', (error) => console.error(`command error: "${error}"`))
 
+        command.stdout.on('data', (line) => {
+            console.log(line)
+        })
+
+        command.stderr.on('data', (line) => {
+            terminal.value = line
+            console.log(line)
+        })
+        const child = await command.spawn()
+
+        // console.log(child)
+    })
     // const command = new Command('ffmpeg', ['/C', `ffmpeg -i ${input} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${img}`])
     // command.on('close', (data) => {
     //     console.log(`command finished with code ${data.code} and signal ${data.signal}`)
@@ -144,14 +163,6 @@ async function start() {
     // }
     // processEntries(entries)
 }
-
-async function init() {
-    // await appWindow.onCloseRequested(async (event) => {
-    //     const confirmed = await confirm('Are you sure?')
-    //     await createDir('D:\\program\\rust\\tauri-app\\ffmpeg', { dir: BaseDirectory.App, recursive: true })
-    // })
-}
-init()
 
 const precent = ref(0)
 

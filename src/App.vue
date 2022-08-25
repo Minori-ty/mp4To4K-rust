@@ -26,7 +26,11 @@
             <div class="tip">注意: 视频名不要有空格</div>
         </el-aside>
         <el-main>
-            <router-view></router-view>
+            <router-view v-slot="{ Component }">
+                <KeepAlive>
+                    <component :is="Component"></component>
+                </KeepAlive>
+            </router-view>
         </el-main>
     </el-container>
 </template>

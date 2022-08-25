@@ -10,7 +10,7 @@
     <p style="margin-top: 20px">@本项目地址: https://github.com/Minori-ty/mp4To4K-rust</p>
     <p>@ffmpeg项目地址: https://github.com/FFmpeg/FFmpeg</p>
     <p>@Real-ESRGAN项目地址: https://github.com/xinntao/Real-ESRGAN</p>
-    <p style="margin: 20px 0; text-align: center">如果这个软件对你有帮助, 可以请作者喝杯咖啡。</p>
+    <p style="margin: 20px 0; text-align: center">如果这个软件对你有帮助, 可以请作者喝一杯咖啡。</p>
     <div class="wechar">
         <img src="../assets/二维码.png" alt="" />
     </div>

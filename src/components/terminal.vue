@@ -86,7 +86,7 @@ async function init() {
                 path: `${props.basePath}/img_out/${fileName}`,
             })
             if (outCount > 10) {
-                const total = formatTime(duration.value) * Number(fps.value)
+                const total = formatTime(duration.value)
                 show2.value = false
                 const cmd4 = `${props.ffmpegPath}  -r ${fps.value} -i  ${props.basePath}/img_out/${fileName}/frame%08d.jpg -i  ${props.basePath}/input/${props.file} -map 0:v:0 -map 1:a:0 -c:a copy -c:v ${props.model} -r ${fps.value} -pix_fmt yuv420p ${props.basePath}/output/${props.file}`
                 console.log(cmd4)
@@ -108,6 +108,7 @@ async function init() {
                     if (result) {
                         const current = formatTime(result[0])
                         precent3.value = Math.round((current / total) * 100)
+                        console.log(current, total)
                     }
                 }
             } else {
@@ -167,7 +168,7 @@ async function init() {
                 pids.push(child3.pid)
                 command3.on('close', async () => {
                     precent2.value = 100
-                    const total = formatTime(duration.value) * Number(fps.value)
+                    const total = formatTime(duration.value)
                     show2.value = false
                     const cmd4 = `${props.ffmpegPath}  -r ${fps.value} -i  ${props.basePath}/img_out/${fileName}/frame%08d.jpg -i  ${props.basePath}/input/${props.file} -map 0:v:0 -map 1:a:0 -c:a copy -c:v ${props.model} -r ${fps.value} -pix_fmt yuv420p ${props.basePath}/output/${props.file}`
                     console.log(cmd4)
@@ -188,6 +189,8 @@ async function init() {
                         const result = data.match(/(?<=time=).+(?= bitrate)/)
                         if (result) {
                             const current = formatTime(result[0])
+                            console.log(current, total)
+
                             precent3.value = Math.round((current / total) * 100)
                         }
                     }

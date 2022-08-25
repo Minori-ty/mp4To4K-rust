@@ -52,7 +52,7 @@ import Complete from './complete.vue'
 const activeName = ref('first')
 const scheduleList = ref<string[]>([])
 const completeList = ref<string[]>([])
-const model = ref('libx264')
+const model = ref<'hevc_nvenc' | 'libx264'>('hevc_nvenc')
 const options = [
     {
         value: 'hevc_nvenc',
@@ -132,6 +132,9 @@ async function start() {
 
     /** input的上级路径 */
     basePath.value = path.value.replace('/input', '')
+    await readDir(`${basePath.value}/output`).catch(() => {
+        createDir(`${basePath.value}/output`)
+    })
     await readDir(`${basePath.value}/img_temp`).catch(() => {
         createDir(`${basePath.value}/img_temp`)
     })
@@ -139,12 +142,14 @@ async function start() {
     await readDir(`${basePath.value}/img_out`).catch(() => {
         createDir(`${basePath.value}/img_out`)
     })
-    await readDir(`${basePath.value}/output`).catch(() => {
-        createDir(`${basePath.value}/output`)
+
+    const existList = await invoke<string[]>('read_dir_file', { path: `${basePath.value}/output` })
+    scheduleList.value = fileList.filter((file) => {
+        return !existList.includes(file)
     })
-    scheduleList.value = fileList
+    // scheduleList.value = fileList
     console.log(basePath.value)
-    return
+    return 0
     fileList.forEach(async (file) => {
         const fileName = file.replace('.mp4', '')
         await readDir(`${basePath.value}/img_temp/${fileName}`).catch(() => {

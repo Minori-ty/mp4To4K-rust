@@ -9,5 +9,13 @@
     <body>
         <div id="app"></div>
         <script type="module" src="/src/main.ts"></script>
+        <script>
+            // 禁止右键
+            document.oncontextmenu = function () {
+                // false为禁止
+                return false
+                // return true
+            }
+        </script>
     </body>
 </html>

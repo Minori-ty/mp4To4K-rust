@@ -4,7 +4,7 @@ $title-aside: 220px;
 * {
     margin: 0;
     padding: 0;
-    color: #fff;
+    // color: #fff;
     // user-select: none;
     box-sizing: border-box;
 }
@@ -78,4 +78,10 @@ $title-aside: 220px;
     width: $title-aside;
     height: $title-bar-height;
     background-color: #1b1b1b;
+}
+
+.el-icon {
+    svg {
+        color: #fff;
+    }
 }

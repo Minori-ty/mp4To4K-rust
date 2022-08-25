@@ -14,7 +14,8 @@
         "@element-plus/icons-vue": "^2.0.9",
         "@tauri-apps/api": "^1.0.2",
         "element-plus": "^2.2.13",
-        "vue": "^3.2.37"
+        "vue": "^3.2.37",
+        "vue-router": "^4.0.13"
     },
     "devDependencies": {
         "@tauri-apps/cli": "^1.0.5",

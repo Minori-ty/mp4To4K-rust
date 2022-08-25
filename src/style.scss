@@ -5,6 +5,7 @@ $title-aside: 220px;
     margin: 0;
     padding: 0;
     // color: #fff;
+    //禁止用户复制
     // user-select: none;
     box-sizing: border-box;
 }
@@ -84,4 +85,8 @@ $title-aside: 220px;
     svg {
         color: #fff;
     }
+}
+
+.el-scrollbar {
+    padding-right: 20px;
 }

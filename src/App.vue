@@ -3,6 +3,9 @@
         <div data-tauri-drag-region class="titlebar">
             <div data-tauri-drag-region class="title-aside"></div>
             <div>
+                <div class="titlebar-button" id="titlebar-help">
+                    <img src="./assets/问号.svg" alt="minimize" />
+                </div>
                 <div class="titlebar-button" id="titlebar-minimize" @click="minimize">
                     <img src="./assets/最小化.svg" alt="minimize" />
                 </div>
@@ -20,18 +23,36 @@
             <div class="box title">
                 <el-icon><HomeFilled /></el-icon> <span style="padding-left: 10px; color: #fff">视频转4K视频</span>
             </div>
+            <div class="tip">注意: 视频名不要有空格</div>
         </el-aside>
         <el-main>
-            <div class="box select-box">
-                <div class="box select-button" @click="select">+ 选择路径</div>
-                <el-select v-model="model" class="m-2" placeholder="Select" size="large">
-                    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
-                </el-select>
-                <div class="box" :class="[path ? 'start-button' : 'default-button']" @click="start">开始转码</div>
-            </div>
+            <el-scrollbar>
+                <div class="box select-box">
+                    <div class="box select-button" @click="select">+ 选择路径</div>
+                    <el-select v-model="model" class="m-2" placeholder="Select" size="large">
+                        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
+                    </el-select>
+                    <div class="box" :class="[path ? 'start-button' : 'default-button']" @click="start">开始转码</div>
+                </div>
 
-            <div class="box terminal">{{ terminal }}</div>
-            <!-- <el-button @click="ffmpeg" type="primary">开始</el-button> -->
+                <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick">
+                    <el-tab-pane label="正在转换" name="first">
+                        <Terminal
+                            v-for="file in scheduleList"
+                            :key="file"
+                            :file="file"
+                            :basePath="basePath"
+                            :ffmpeg-path="ffmpegPath"
+                            :realesrgan="realesrgan"
+                            :model="model"
+                            @completed="completed"
+                        />
+                    </el-tab-pane>
+                    <el-tab-pane label="完成" name="second">
+                        <Complete v-for="file in completeList" :key="file" :file-name="file" />
+                    </el-tab-pane>
+                </el-tabs>
+            </el-scrollbar>
         </el-main>
     </el-container>
 </template>
@@ -42,7 +63,7 @@ import { HomeFilled } from '@element-plus/icons-vue'
 import { minimize, closeApp } from './system'
 import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir, resourceDir, join } from '@tauri-apps/api/path'
-import { Command, ChildProcess } from '@tauri-apps/api/shell'
+import { Command } from '@tauri-apps/api/shell'
 import { createDir, readDir } from '@tauri-apps/api/fs'
 import max from './assets/最大化.svg'
 import remin from './assets/还原.svg'
@@ -53,8 +74,14 @@ import { getffmpeg } from './script/getffmpeg'
 import { pids } from './store'
 import { formatTime } from './utils/formatTime'
 import { throttle } from './utils/throttle'
+import Terminal from './components/terminal.vue'
+import type { TabsPaneContext } from 'element-plus'
+import Complete from './components/complete.vue'
 
-const model = ref('hevc_nvenc')
+const activeName = ref('first')
+const scheduleList = ref<string[]>([])
+const completeList = ref<string[]>([])
+const model = ref('libx264')
 const options = [
     {
         value: 'hevc_nvenc',
@@ -67,18 +94,26 @@ const options = [
 ]
 /** ffmpeg的路径 */
 const ffmpegPath = ref('')
+
 /** realesrgan的路径 */
 const realesrgan = ref('')
+
+/** 控制台信息 */
 const terminal = ref('')
 
+/** 初始化时要做的事情 */
 async function init() {
     // 获取ffmpeg路径
     ;[ffmpegPath.value, realesrgan.value] = await getffmpeg()
-    // const data = await invoke<number>('read_dir_file_count', { path: 'D:\\program\\rust\\img_temp\\test' })
-    // console.log(data)
 }
 init()
 
+/**
+ * 切换面板
+ * @param tab
+ * @param event
+ */
+const handleClick = (tab: TabsPaneContext, event: Event) => {}
 /** 当前软件是否最大化 */
 const isMax = ref(false)
 
@@ -103,6 +138,11 @@ async function select() {
     }
 }
 
+function completed(file: string) {
+    scheduleList.value = scheduleList.value.filter((name: string) => name !== file)
+    completeList.value.push(file)
+}
+let basePath = ref('')
 async function start() {
     const arr = path.value.split('/')
     console.log(arr)
@@ -115,37 +155,36 @@ async function start() {
         return ElMessageBox.alert('请选择input目录', 'Title', {
             confirmButtonText: 'OK',
         })
-    const data = await invoke<string[]>('read_dir_file', { path: path.value })
-    // console.log(data)
-    if (data.length === 0) return
-    // console.log(path.value)
-    const ls = await join(path.value)
-    // console.log(ls)
+    const fileList = await invoke<string[]>('read_dir_file', { path: path.value })
+    // console.log(fileList)
+    if (fileList.length === 0) return
 
-    // const res = path.value.match(/.+(?=\/input)/g)
     /** input的上级路径 */
-    const basePath = path.value.replace('/input', '')
-    await readDir(`${basePath}/img_temp`).catch(() => {
-        createDir(`${basePath}/img_temp`)
+    basePath.value = path.value.replace('/input', '')
+    await readDir(`${basePath.value}/img_temp`).catch(() => {
+        createDir(`${basePath.value}/img_temp`)
     })
-    console.log(basePath)
-    await readDir(`${basePath}/img_out`).catch(() => {
-        createDir(`${basePath}/img_out`)
+    console.log(basePath.value)
+    await readDir(`${basePath.value}/img_out`).catch(() => {
+        createDir(`${basePath.value}/img_out`)
     })
-    await readDir(`${basePath}/output`).catch(() => {
-        createDir(`${basePath}/output`)
+    await readDir(`${basePath.value}/output`).catch(() => {
+        createDir(`${basePath.value}/output`)
     })
-    data.forEach(async (file) => {
+    scheduleList.value = fileList
+    console.log(basePath.value)
+    return
+    fileList.forEach(async (file) => {
         const fileName = file.replace('.mp4', '')
-        await readDir(`${basePath}/img_temp/${fileName}`).catch(() => {
-            createDir(`${basePath}/img_temp/${fileName}`)
+        await readDir(`${basePath.value}/img_temp/${fileName}`).catch(() => {
+            createDir(`${basePath.value}/img_temp/${fileName}`)
         })
-        await readDir(`${basePath}/img_out/${fileName}`).catch(() => {
-            createDir(`${basePath}/img_out/${fileName}`)
+        await readDir(`${basePath.value}/img_out/${fileName}`).catch(() => {
+            createDir(`${basePath.value}/img_out/${fileName}`)
         })
         let fps = '30'
         let duration = ''
-        const cmd1 = `ffmpeg -i ${basePath}/input/${file}`
+        const cmd1 = `ffmpeg -i ${basePath.value}/input/${file}`
         console.log(cmd1)
 
         const command1 = new Command('ffmpeg', ['/C', cmd1])
@@ -167,7 +206,7 @@ async function start() {
         pids.push(child1.pid)
         console.log(fps)
 
-        const cmd2 = `${ffmpegPath.value}  -i ${basePath}/input/${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}/img_temp/${fileName}/frame%08d.png`
+        const cmd2 = `${ffmpegPath.value}  -i ${basePath.value}/input/${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}/img_temp/${fileName}/frame%08d.png`
         // const cmd2 = `${ffmpegPath.value} -i "${basePath.replaceAll(
         //     '/',
         //     '\\'
@@ -310,12 +349,13 @@ function toggleMaximize() {
         box-shadow: 0px 0px 5px #409eff;
     }
 }
-.terminal {
-    margin-top: 40px;
-    height: 80px;
-}
 
 .text-red {
     color: red;
+}
+.tip {
+    color: red;
+    margin: 50px auto;
+    text-align: center;
 }
 </style>

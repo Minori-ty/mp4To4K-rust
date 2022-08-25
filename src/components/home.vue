@@ -1,40 +1,37 @@
 <template>
-    <div class="clearfix">
-        <div data-tauri-drag-region class="titlebar">
-            <div data-tauri-drag-region class="title-aside"></div>
-            <div>
-                <div class="titlebar-button" id="titlebar-help" @click="goToCopyright">
-                    <img src="./assets/问号.svg" alt="minimize" />
-                </div>
-                <div class="titlebar-button" id="titlebar-minimize" @click="minimize">
-                    <img src="./assets/最小化.svg" alt="minimize" />
-                </div>
-                <div class="titlebar-button" id="titlebar-maximize" @click="toggleMaximize">
-                    <img :src="isMax ? remin : max" alt="maximize" />
-                </div>
-                <div class="titlebar-button" id="titlebar-close" @click="closeApp">
-                    <img src="./assets/关闭.svg" alt="close" />
-                </div>
-            </div>
+    <el-scrollbar>
+        <div class="box select-box">
+            <div class="box select-button" @click="select">+ 选择路径</div>
+            <el-select v-model="model" class="m-2" placeholder="Select" size="large">
+                <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <div class="box" :class="[path ? 'start-button' : 'default-button']" @click="start">开始转码</div>
         </div>
-    </div>
-    <el-container>
-        <el-aside>
-            <div class="box title" @click="goToHome">
-                <el-icon><HomeFilled /></el-icon> <span style="padding-left: 10px; color: #fff">视频转4K视频</span>
-            </div>
-            <div class="tip">注意: 视频名不要有空格</div>
-        </el-aside>
-        <el-main>
-            <router-view></router-view>
-        </el-main>
-    </el-container>
+
+        <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick">
+            <el-tab-pane label="正在转换" name="first">
+                <Terminal
+                    v-for="file in scheduleList"
+                    :key="file"
+                    :file="file"
+                    :basePath="basePath"
+                    :ffmpeg-path="ffmpegPath"
+                    :realesrgan="realesrgan"
+                    :model="model"
+                    @completed="completed"
+                />
+            </el-tab-pane>
+            <el-tab-pane label="完成" name="second">
+                <Complete v-for="file in completeList" :key="file" :file-name="file" />
+            </el-tab-pane>
+        </el-tabs>
+    </el-scrollbar>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { HomeFilled } from '@element-plus/icons-vue'
-import { minimize, closeApp } from './system'
+import { minimize, closeApp } from '../system'
 import { open, confirm } from '@tauri-apps/api/dialog'
 import { appDir, resourceDir, join } from '@tauri-apps/api/path'
 import { Command } from '@tauri-apps/api/shell'
@@ -44,16 +41,14 @@ import remin from './assets/还原.svg'
 import { ElMessageBox } from 'element-plus'
 import { invoke } from '@tauri-apps/api/tauri'
 import { appWindow } from '@tauri-apps/api/window'
-import { getffmpeg } from './script/getffmpeg'
-import { pids } from './store'
-import { formatTime } from './utils/formatTime'
-import { throttle } from './utils/throttle'
-import Terminal from './components/terminal.vue'
+import { getffmpeg } from '../script/getffmpeg'
+import { pids } from '../store'
+import { formatTime } from '../utils/formatTime'
+import { throttle } from '../utils/throttle'
+import Terminal from './terminal.vue'
 import type { TabsPaneContext } from 'element-plus'
-import Complete from './components/complete.vue'
-import { useRouter } from 'vue-router'
+import Complete from './complete.vue'
 
-const router = useRouter()
 const activeName = ref('first')
 const scheduleList = ref<string[]>([])
 const completeList = ref<string[]>([])
@@ -84,12 +79,6 @@ async function init() {
 }
 init()
 
-function goToCopyright() {
-    router.push('/copyright')
-}
-function goToHome() {
-    router.push('/')
-}
 /**
  * 切换面板
  * @param tab
@@ -257,8 +246,8 @@ const precent = ref(0)
 // 禁止右键
 document.oncontextmenu = function () {
     // false为禁止
-    return false
-    // return true
+    // return false
+    return true
 }
 
 const arr = [755, 155]
@@ -295,7 +284,6 @@ function toggleMaximize() {
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
 }
 .select-box {
     height: 150px;

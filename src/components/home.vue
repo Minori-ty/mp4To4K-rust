@@ -29,22 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { HomeFilled } from '@element-plus/icons-vue'
-import { minimize, closeApp } from '../system'
-import { open, confirm } from '@tauri-apps/api/dialog'
-import { appDir, resourceDir, join } from '@tauri-apps/api/path'
-import { Command } from '@tauri-apps/api/shell'
+import { ref } from 'vue'
+import { open } from '@tauri-apps/api/dialog'
+import { appDir } from '@tauri-apps/api/path'
 import { createDir, readDir } from '@tauri-apps/api/fs'
-import max from './assets/最大化.svg'
-import remin from './assets/还原.svg'
 import { ElMessageBox } from 'element-plus'
 import { invoke } from '@tauri-apps/api/tauri'
-import { appWindow } from '@tauri-apps/api/window'
 import { getffmpeg } from '../script/getffmpeg'
-import { pids } from '../store'
-import { formatTime } from '../utils/formatTime'
-import { throttle } from '../utils/throttle'
 import Terminal from './terminal.vue'
 import type { TabsPaneContext } from 'element-plus'
 import Complete from './complete.vue'
@@ -52,7 +43,7 @@ import Complete from './complete.vue'
 const activeName = ref('first')
 const scheduleList = ref<string[]>([])
 const completeList = ref<string[]>([])
-const model = ref<'hevc_nvenc' | 'libx264'>('hevc_nvenc')
+const model = ref<'hevc_nvenc' | 'libx264'>('libx264')
 const options = [
     {
         value: 'hevc_nvenc',
@@ -69,9 +60,6 @@ const ffmpegPath = ref('')
 /** realesrgan的路径 */
 const realesrgan = ref('')
 
-/** 控制台信息 */
-const terminal = ref('')
-
 /** 初始化时要做的事情 */
 async function init() {
     // 获取ffmpeg路径
@@ -85,8 +73,6 @@ init()
  * @param event
  */
 const handleClick = (tab: TabsPaneContext, event: Event) => {}
-/** 当前软件是否最大化 */
-const isMax = ref(false)
 
 /** 选择的目录路径 */
 const path = ref('')
@@ -149,117 +135,14 @@ async function start() {
     })
     // scheduleList.value = fileList
     console.log(basePath.value)
-    return 0
-    fileList.forEach(async (file) => {
-        const fileName = file.replace('.mp4', '')
-        await readDir(`${basePath.value}/img_temp/${fileName}`).catch(() => {
-            createDir(`${basePath.value}/img_temp/${fileName}`)
-        })
-        await readDir(`${basePath.value}/img_out/${fileName}`).catch(() => {
-            createDir(`${basePath.value}/img_out/${fileName}`)
-        })
-        let fps = '30'
-        let duration = ''
-        const cmd1 = `ffmpeg -i ${basePath.value}/input/${file}`
-        console.log(cmd1)
-
-        const command1 = new Command('ffmpeg', ['/C', cmd1])
-
-        command1.stderr.on('data', (line) => {
-            const fpsResult = line.match(/\w{2}\.?\w{0,2}(?= fps)/)
-            /** 匹配视频持续时间的信息 */
-            const durationResult = line.match(/(?<=Duration: ).+(?=, start)/)
-            if (fpsResult) {
-                fps = fpsResult[0]
-                console.log(fps)
-            }
-            if (durationResult) {
-                duration = durationResult[0]
-                console.log(duration)
-            }
-        })
-        const child1 = await command1.spawn()
-        pids.push(child1.pid)
-        console.log(fps)
-
-        const cmd2 = `${ffmpegPath.value}  -i ${basePath.value}/input/${file} -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 ${basePath}/img_temp/${fileName}/frame%08d.png`
-        // const cmd2 = `${ffmpegPath.value} -i "${basePath.replaceAll(
-        //     '/',
-        //     '\\'
-        // )}\\input\\${file}" -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 "${basePath.replaceAll(
-        //     '/',
-        //     '\\'
-        // )}\\img_temp\\${fileName}\\frame%08d.png"`
-
-        console.log(cmd2)
-        const command2 = new Command('ffmpeg', ['/C', cmd2])
-        // ffmpeg任务执行完后再执行转图片
-        command2.on('close', async () => {
-            console.log('任务完成')
-            /** 图片总数 */
-            const total = formatTime(duration) * Number(fps)
-            const cmd3 = `${realesrgan.value} -i ${basePath}/img_temp/${fileName} -o ${basePath}/img_out/${fileName} -n realesr-animevideov3 -s 2 -f jpg`
-            const command3 = new Command('ffmpeg', ['/C', cmd3])
-            console.log(cmd3)
-            command3.on('close', () => {
-                console.log('任务完成')
-            })
-
-            command3.stderr.on('data', throttle(fn))
-            async function fn(line: string) {
-                const current = await invoke<number>('read_dir_file_count', { path: `${basePath}/img_out/${fileName}` })
-                console.log(current)
-                terminal.value = (current / total) * 100 + '%'
-                // console.log(line)
-            }
-            command3.on('error', (error) => {
-                console.log(error)
-            })
-            const child3 = await command3.spawn()
-            pids.push(child3.pid)
-            command3.on('close', async () => {
-                const cmd4 = `${ffmpegPath.value}  -r ${fps} -i  ${basePath}/img_out/${fileName}/frame%08d.jpg -i  ${basePath}/input/${file} -map 0:v:0 -map 1:a:0 -c:a copy -c:v ${model.value} -r ${fps} -pix_fmt yuv420p ${basePath}/output/${file}`
-                const command4 = new Command('ffmpeg', ['/C', cmd4])
-                console.log(cmd4)
-                command4.on('close', () => {
-                    console.log('任务完成')
-                })
-
-                command4.stderr.on('data', (line) => {
-                    terminal.value = line
-                    // console.log(line)
-                })
-                command4.on('error', (error) => {
-                    console.log(error)
-                })
-                const child4 = await command4.spawn()
-                pids.push(child4.pid)
-            })
-        })
-
-        command2.stderr.on('data', (line) => {
-            terminal.value = line
-            console.log(line)
-        })
-        const child2 = await command2.spawn()
-        pids.push(child2.pid)
-    })
+    return
 }
-
-const precent = ref(0)
 
 // 禁止右键
 document.oncontextmenu = function () {
     // false为禁止
     // return false
     return true
-}
-
-const arr = [755, 155]
-
-function toggleMaximize() {
-    appWindow.toggleMaximize()
-    isMax.value = !isMax.value
 }
 </script>
 
@@ -305,10 +188,10 @@ function toggleMaximize() {
     color: #fff;
 }
 .select-button {
-    background-color: #01c2ce;
+    background-color: #409eff;
     @extend %btn;
     &:hover {
-        box-shadow: 0px 0px 5px #01c2ce;
+        box-shadow: 0px 0px 5px #409eff;
     }
 }
 .default-button {
@@ -319,10 +202,10 @@ function toggleMaximize() {
     }
 }
 .start-button {
-    background-color: #409eff;
+    background-color: #67c23a;
     @extend %btn;
     &:hover {
-        box-shadow: 0px 0px 5px #409eff;
+        box-shadow: 0px 0px 5px #67c23a;
     }
 }
 

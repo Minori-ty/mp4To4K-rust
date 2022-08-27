@@ -34,6 +34,6 @@ const props = defineProps<{
 }
 .icon {
     width: 40px;
-    margin: 0px 10px 0;
+    margin: 0px 0 0 20px;
 }
 </style>

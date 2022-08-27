@@ -7,7 +7,7 @@
         "distDir": "../dist"
     },
     "package": {
-        "productName": "tauri-app",
+        "productName": "一键转4K视频",
         "version": "0.1.0"
     },
     "tauri": {
@@ -41,7 +41,7 @@
                 "icons/icon.icns",
                 "icons/icon.ico"
             ],
-            "identifier": "com.lk.lk",
+            "identifier": "com.minority.dev",
             "longDescription": "",
             "macOS": {
                 "entitlements": null,

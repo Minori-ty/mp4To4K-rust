@@ -1,21 +1,31 @@
 <template>
     <div class="terminalBox">
-        <h3 class="title" v-if="show1">视频转图片的任务</h3>
+        <h2 class="h2">{{ props.file }}</h2>
+        <h4 class="title" v-if="show1">视频转图片的任务</h4>
         <div class="flex" v-if="show1">
-            <span class="file">{{ props.file }}</span
-            ><el-progress :percentage="precent1" style="flex: 1" />
+            <img class="icon" src="../assets/图像.svg" alt="" />
+            <div style="flex: 1">
+                <!-- <div class="file">{{ props.file }}</div> -->
+                <el-progress :percentage="precent1" style="flex: 1" />
+            </div>
         </div>
 
-        <h3 class="title" v-if="show2">图片转4K图片的任务</h3>
+        <h4 class="title" v-if="show2">图片转4K图片的任务</h4>
         <div class="flex" v-if="show2">
-            <span class="file">{{ props.file }}</span
-            ><el-progress :percentage="precent2" style="flex: 1" />
+            <img class="icon" src="../assets/图像.svg" alt="" />
+            <div style="flex: 1">
+                <!-- <div class="file">{{ props.file }}</div> -->
+                <el-progress :percentage="precent2" style="flex: 1" />
+            </div>
         </div>
 
-        <h3 class="title">4K图片转4K视频的任务</h3>
+        <h4 class="title">4K图片转4K视频的任务</h4>
         <div class="flex">
-            <span class="file">{{ props.file }}</span
-            ><el-progress :percentage="precent3" style="flex: 1" />
+            <img class="icon" src="../assets/视频.svg" alt="" />
+            <div style="flex: 1">
+                <!-- <div class="file">{{ props.file }}</div> -->
+                <el-progress :percentage="precent3" style="flex: 1" />
+            </div>
         </div>
     </div>
 </template>
@@ -97,6 +107,7 @@ async function init() {
                 command4.on('close', () => {
                     // show3.value = false
                     emits('completed', props.file)
+                    precent3.value = 100
                 })
                 command4.on('error', (error) => {
                     console.log(error)
@@ -179,6 +190,7 @@ async function init() {
                     command4.on('close', () => {
                         // show3.value = false
                         emits('completed', props.file)
+                        precent3.value = 100
                     })
                     command4.on('error', (error) => {
                         console.log(error)
@@ -212,13 +224,22 @@ init()
     padding-bottom: 20px;
 }
 .file {
-    padding: 0 20px;
+    // padding: 0 20px;
 }
 .flex {
     display: flex;
     align-items: center;
+    padding-left: 20px;
+    line-height: 50px;
 }
 .title {
     padding: 30px 0 20px 20px;
+}
+.h2 {
+    padding: 20px 0 0px 20px;
+}
+.icon {
+    width: 40px;
+    margin: 0px 10px 0;
 }
 </style>

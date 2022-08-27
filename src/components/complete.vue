@@ -1,6 +1,7 @@
 <template>
     <div class="terminalBox">
         <div class="flex">
+            <img class="icon" src="../assets/视频.svg" alt="" />
             <span class="file">{{ props.fileName }}</span
             ><el-progress :percentage="100" style="flex: 1" />
         </div>
@@ -30,5 +31,9 @@ const props = defineProps<{
 }
 .title {
     padding: 20px 0 40px 20px;
+}
+.icon {
+    width: 40px;
+    margin: 0px 10px 0;
 }
 </style>
